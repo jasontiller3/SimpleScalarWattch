@@ -160,6 +160,13 @@ int RUU_size = 8;
 /* load/store queue (LSQ) size */
 int LSQ_size = 4;
 
+/* CDA5106: Creating a cache level "zero" for our tiny block-buffer cache */
+/* l0 data cache config, i.e., {<config>|none} */
+static char *cache_dl0_opt;
+
+/* l0 data cache hit latency (in cycles) */
+static int cache_dl0_lat;
+
 /* l1 data cache config, i.e., {<config>|none} */
 static char *cache_dl1_opt;
 
@@ -412,6 +419,10 @@ struct cache_t *cache_il1;
 
 /* level 1 instruction cache */
 static struct cache_t *cache_il2;
+
+/* CDA5106: New tiny block-buffering cache "dl0" */
+/* level 0 data cache, entry level data cache */
+struct cache_t *cache_dl0;
 
 /* level 1 data cache, entry level data cache */
 struct cache_t *cache_dl1;
@@ -788,6 +799,12 @@ sim_reg_options(struct opt_odb_t *odb)
 
   /* cache options */
 
+  /* CDA5106: Adding options to tiny block-buffering dl0 cache */
+  opt_reg_string(odb, "-cache:dl0",
+		 "l0 data cache config, i.e., {<config>|none}",
+		 &cache_dl0_opt, "dl0:1:32:32:l",
+		 /* print */TRUE, NULL);
+		 
   opt_reg_string(odb, "-cache:dl1",
 		 "l1 data cache config, i.e., {<config>|none}",
 		 &cache_dl1_opt, "dl1:128:32:4:l",
@@ -1084,6 +1101,22 @@ sim_check_options(struct opt_odb_t *odb,        /* options database */
 				   /* usize */0, assoc, cache_char2policy(c),
 				   dl2_access_fn, /* hit lat */cache_dl2_lat);
 	}
+	
+		/* CDA5106: Configure tiny dl0 cache */
+		/* is the level 2 D-cache defined? */
+			if (!mystricmp(cache_dl0_opt, "none"))
+				cache_dl0 = NULL;
+			else
+			{
+			  if (sscanf(cache_dl0_opt, "%[^:]:%d:%d:%d:%c",
+					  name, &nsets, &bsize, &assoc, &c) != 5)
+				 fatal("bad l0 D-cache parms: "
+				  "<name>:<nsets>:<bsize>:<assoc>:<repl>");
+			  cache_dl0 = cache_create(name, nsets, bsize, /* balloc */FALSE,
+							/* usize */0, assoc, cache_char2policy(c),
+							dl0_access_fn, /* hit lat */cache_dl0_lat);
+			}
+	
     }
 
   /* use a level 1 I-cache? */
