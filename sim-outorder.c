@@ -242,6 +242,8 @@ counter_t window_access=0;
 counter_t lsq_access=0;
 counter_t regfile_access=0;
 counter_t icache_access=0;
+/* CDA5106: wattch conter for block buffer */
+counter_t blockbuffer_access=0;
 counter_t dcache_access=0;
 counter_t dcache2_access=0;
 counter_t alu_access=0;
@@ -475,6 +477,66 @@ mem_access_latency(int blk_sz)		/* block size accessed */
  * cache miss handlers
  */
 
+/* CDA5106: Cache access function for dl0 */
+/* l0 data cache l0 block miss handler function */
+static unsigned int			/* latency of block access */
+dl0_access_fn(enum mem_cmd cmd,		/* access cmd, Read or Write */
+	      md_addr_t baddr,		/* block address to access */
+	      int bsize,		/* size of block to access */
+	      struct cache_blk_t *blk,	/* ptr to block in upper level */
+	      tick_t now)		/* time of access */
+{
+  unsigned int lat;
+
+  if (cache_dl1)
+    {
+      /* access next level of data cache hierarchy */
+      lat = cache_access(cache_dl1, cmd, baddr, NULL, bsize,
+			 /* now */now, /* pudata */NULL, /* repl addr */NULL);
+
+      /* Wattch -- Dcache access */
+      dcache_access++;
+
+      if (cmd == Read)
+	return lat;
+      else
+	{
+	  /* FIXME: unlimited write buffers */
+	  return 0;
+	}
+    } 
+	 else if (cache_dl2)
+    {
+      /* access next level of data cache hierarchy */
+      lat = cache_access(cache_dl2, cmd, baddr, NULL, bsize,
+			 /* now */now, /* pudata */NULL, /* repl addr */NULL);
+
+      /* Wattch -- Dcache2 access */
+      dcache2_access++;
+
+      if (cmd == Read)
+	return lat;
+      else
+	{
+	  /* FIXME: unlimited write buffers */
+	  return 0;
+	}
+    }
+  else
+    {
+      /* access main memory */
+      if (cmd == Read)
+	return mem_access_latency(bsize);
+      else
+	{
+	  /* FIXME: unlimited write buffers */
+	  return 0;
+	}
+    }
+}
+
+ 
+ 
 /* l1 data cache l1 block miss handler function */
 static unsigned int			/* latency of block access */
 dl1_access_fn(enum mem_cmd cmd,		/* access cmd, Read or Write */
@@ -1390,6 +1452,9 @@ sim_reg_stats(struct stat_sdb_t *sdb)   /* stats database */
   if (cache_il2
       && (cache_il2 != cache_dl1 && cache_il2 != cache_dl2))
     cache_reg_stats(cache_il2, sdb);
+	/* CDA5106: Register stats for tiny block-buffering dl0 cache */
+  if (cache_dl0)
+    cache_reg_stats(cache_dl0, sdb);
   if (cache_dl1)
     cache_reg_stats(cache_dl1, sdb);
   if (cache_dl2)
@@ -2281,19 +2346,35 @@ ruu_commit(void)
 		  /* schedule functional unit release event */
 		  fu->master->busy = fu->issuelat;
 
+		  /* CDA5106: go to the block-buffer cache */
 		  /* go to the data cache */
-		  if (cache_dl1)
+		  if (cache_dl0)
 		    {
   		      /* Wattch -- D-cache access */
-		      dcache_access++;
+		      blockbuffer_access++;
 
               /* commit store value to D-cache */
 		      lat =
-			cache_access(cache_dl1, Write, (LSQ[LSQ_head].addr&~3),
+			cache_access(cache_dl0, Write, (LSQ[LSQ_head].addr&~3),
 				     NULL, 4, sim_cycle, NULL, NULL);
-		      if (lat > cache_dl1_lat)
+		      if (lat > cache_dl0_lat)
 			events |= PEV_CACHEMISS;
 		    }
+			 
+			 
+			///* go to the data cache */
+		   //if (cache_dl1)
+		   //{
+  		   //   /* Wattch -- D-cache access */
+		   //   dcache_access++;
+			//
+         //     /* commit store value to D-cache */
+		   //   lat =
+			//cache_access(cache_dl1, Write, (LSQ[LSQ_head].addr&~3),
+			//	     NULL, 4, sim_cycle, NULL, NULL);
+		   //   if (lat > cache_dl1_lat)
+			//events |= PEV_CACHEMISS;
+		   //  }
 
 		  /* all loads and stores must to access D-TLB */
 		  if (dtlb)
@@ -2883,19 +2964,36 @@ ruu_issue(void)
 			      if (!spec_mode && !valid_addr)
 				sim_invalid_addrs++;
 
+			   //   /* no! go to the data cache if addr is valid */
+			   //   if (cache_dl1 && valid_addr)
+				//{
+				//  /* Wattch -- D-cache access */
+				//  dcache_access++;
+				//  /* access the cache if non-faulting */
+				//  load_lat =
+				//    cache_access(cache_dl1, Read,
+				//		 (rs->addr & ~3), NULL, 4,
+				//		 sim_cycle, NULL, NULL);
+				//  if (load_lat > cache_dl1_lat)
+				//    events |= PEV_CACHEMISS;
+				//}
+				
+				/* CDA5106: Use block-buffer for loads */
 			      /* no! go to the data cache if addr is valid */
-			      if (cache_dl1 && valid_addr)
+			      if (cache_dl0 && valid_addr)
 				{
 				  /* Wattch -- D-cache access */
-				  dcache_access++;
+				  blockbuffer_access++;
 				  /* access the cache if non-faulting */
 				  load_lat =
-				    cache_access(cache_dl1, Read,
+				    cache_access(cache_dl0, Read,
 						 (rs->addr & ~3), NULL, 4,
 						 sim_cycle, NULL, NULL);
-				  if (load_lat > cache_dl1_lat)
+				  if (load_lat > cache_dl0_lat)
 				    events |= PEV_CACHEMISS;
 				}
+				
+				
 			      else
 				{
 				  /* no caches defined, just use op latency */
