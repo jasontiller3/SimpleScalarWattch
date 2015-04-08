@@ -866,6 +866,11 @@ sim_reg_options(struct opt_odb_t *odb)
 		 "l0 data cache config, i.e., {<config>|none}",
 		 &cache_dl0_opt, "dl0:1:32:32:l",
 		 /* print */TRUE, NULL);
+
+  opt_reg_int(odb, "-cache:dl0lat",
+	      "l0 data cache hit latency (in cycles)",
+	      &cache_dl0_lat, /* default */1,
+	      /* print */TRUE, /* format */NULL);
 		 
   opt_reg_string(odb, "-cache:dl1",
 		 "l1 data cache config, i.e., {<config>|none}",
