@@ -2163,15 +2163,15 @@ void calculate_power(power)
 
   power->icache_power = power->icache_decoder + power->icache_wordline + power->icache_bitline + power->icache_senseamp + power->icache_tagarray;
 
-  time_parameters.cache_size = cache_dl1->nsets * cache_dl1->bsize * cache_dl1->assoc; /* C */
-  time_parameters.block_size = cache_dl1->bsize; /* B */
-  time_parameters.associativity = cache_dl1->assoc; /* A */
-  time_parameters.number_of_sets = cache_dl1->nsets; /* C/(B*A) */
+  /* CDA5106: begin dl0 power stats */
+  time_parameters.cache_size = cache_dl0->nsets * cache_dl0->bsize * cache_dl0->assoc; /* C */
+  time_parameters.block_size = cache_dl0->bsize; /* B */
+  time_parameters.associativity = cache_dl0->assoc; /* A */
+  time_parameters.number_of_sets = cache_dl0->nsets; /* C/(B*A) */
 
   calculate_time(&time_result,&time_parameters);
   output_data(&time_result,&time_parameters);
-
-  /* CDA5106: begin dl0 block buffer stats */
+  
   ndwl=time_result.best_Ndwl;
   ndbl=time_result.best_Ndbl;
   nspd=time_result.best_Nspd;
@@ -2206,7 +2206,7 @@ void calculate_power(power)
   bitlinelength = rowsb * (RegCellHeight + WordlineSpacing);
 
   if(verbose)
-    fprintf(stderr,"blockbuffer dl0 power stats\n");
+    fprintf(stderr,"blockbuffer power stats\n");
   power->blockbuffer_decoder = res_memport*ndwl*ndbl*array_decoder_power(rowsb,colsb,predeclength,1,1,cache);
   power->blockbuffer_wordline = res_memport*ndwl*ndbl*array_wordline_power(rowsb,colsb,wordlinelength,1,1,cache);
   power->blockbuffer_bitline = res_memport*ndwl*ndbl*array_bitline_power(rowsb,colsb,bitlinelength,1,1,cache);
@@ -2221,15 +2221,16 @@ void calculate_power(power)
     fprintf(stderr,"result bus power == %f\n",power->resultbus);
     fprintf(stderr,"global clock power == %f\n",clockpower);
   }
-
-  time_parameters.cache_size = cache_dl2->nsets * cache_dl2->bsize * cache_dl2->assoc; /* C */
-  time_parameters.block_size = cache_dl2->bsize; /* B */
-  time_parameters.associativity = cache_dl2->assoc; /* A */
-  time_parameters.number_of_sets = cache_dl2->nsets; /* C/(B*A) */
+  /* CDA5106: END power stats section */
+  
+  
+  time_parameters.cache_size = cache_dl1->nsets * cache_dl1->bsize * cache_dl1->assoc; /* C */
+  time_parameters.block_size = cache_dl1->bsize; /* B */
+  time_parameters.associativity = cache_dl1->assoc; /* A */
+  time_parameters.number_of_sets = cache_dl1->nsets; /* C/(B*A) */
 
   calculate_time(&time_result,&time_parameters);
   output_data(&time_result,&time_parameters);
-  /* CDA5106: end block */
   
   ndwl=time_result.best_Ndwl;
   ndbl=time_result.best_Ndbl;
@@ -2273,13 +2274,6 @@ void calculate_power(power)
   power->dcache_tagarray = res_memport*ntwl*ntbl*(simple_array_power(trowsb,tcolsb,1,1,cache));
 
   power->dcache_power = power->dcache_decoder + power->dcache_wordline + power->dcache_bitline + power->dcache_senseamp + power->dcache_tagarray;
-
-  clockpower = total_clockpower(.018);
-  power->clock_power = clockpower;
-  if(verbose) {
-    fprintf(stderr,"result bus power == %f\n",power->resultbus);
-    fprintf(stderr,"global clock power == %f\n",clockpower);
-  }
 
   time_parameters.cache_size = cache_dl2->nsets * cache_dl2->bsize * cache_dl2->assoc; /* C */
   time_parameters.block_size = cache_dl2->bsize; /* B */
