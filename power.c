@@ -123,6 +123,8 @@ int npreg_width;
 
 extern int bimod_config[];
 
+/* CDA5106: block-buffer cache dl0 */
+extern struct cache_t *cache_dl0;
 extern struct cache_t *cache_dl1;
 extern struct cache_t *cache_il1;
 extern struct cache_t *cache_dl2;
@@ -150,6 +152,8 @@ static double window_power=0;
 static double lsq_power=0;
 static double regfile_power=0;
 static double icache_power=0;
+/* CDA5106: block-buffer cache dl0 */
+static double blockbuffer_power=0;
 static double dcache_power=0;
 static double dcache2_power=0;
 static double alu_power=0;
@@ -163,6 +167,8 @@ static double window_power_cc1=0;
 static double lsq_power_cc1=0;
 static double regfile_power_cc1=0;
 static double icache_power_cc1=0;
+/* CDA5106: block-buffer cache dl0 */
+static double blockbuffer_power_cc1=0;
 static double dcache_power_cc1=0;
 static double dcache2_power_cc1=0;
 static double alu_power_cc1=0;
@@ -175,6 +181,8 @@ static double window_power_cc2=0;
 static double lsq_power_cc2=0;
 static double regfile_power_cc2=0;
 static double icache_power_cc2=0;
+/* CDA5106: block-buffer cache dl0 */
+static double blockbuffer_power_cc2=0;
 static double dcache_power_cc2=0;
 static double dcache2_power_cc2=0;
 static double alu_power_cc2=0;
@@ -187,6 +195,8 @@ static double window_power_cc3=0;
 static double lsq_power_cc3=0;
 static double regfile_power_cc3=0;
 static double icache_power_cc3=0;
+/* CDA5106: block-buffer cache dl0 */
+static double blockbuffer_power_cc3=0;
 static double dcache_power_cc3=0;
 static double dcache2_power_cc3=0;
 static double alu_power_cc3=0;
@@ -215,6 +225,8 @@ extern counter_t window_access;
 extern counter_t lsq_access;
 extern counter_t regfile_access;
 extern counter_t icache_access;
+/* CDA5106: block-buffer cache dl0 */
+extern counter_t blockbuffer_access;
 extern counter_t dcache_access;
 extern counter_t dcache2_access;
 extern counter_t alu_access;
@@ -245,6 +257,8 @@ static counter_t total_window_access=0;
 static counter_t total_lsq_access=0;
 static counter_t total_regfile_access=0;
 static counter_t total_icache_access=0;
+/* CDA5106: block-buffer cache dl0 */
+static counter_t total_blockbuffer_access=0;
 static counter_t total_dcache_access=0;
 static counter_t total_dcache2_access=0;
 static counter_t total_alu_access=0;
@@ -256,6 +270,8 @@ static counter_t max_window_access;
 static counter_t max_lsq_access;
 static counter_t max_regfile_access;
 static counter_t max_icache_access;
+/* CDA5106: block-buffer cache dl0 */
+static counter_t max_blockbuffer_access;
 static counter_t max_dcache_access;
 static counter_t max_dcache2_access;
 static counter_t max_alu_access;
@@ -269,6 +285,8 @@ void clear_access_stats()
   lsq_access=0;
   regfile_access=0;
   icache_access=0;
+  /* CDA5106: block-buffer cache dl0 */
+  blockbuffer_access=0;
   dcache_access=0;
   dcache2_access=0;
   alu_access=0;
@@ -342,7 +360,9 @@ void update_power_stats()
   lsq_power+=power.lsq_power;
   regfile_power+=power.regfile_power;
   icache_power+=power.icache_power+power.itlb;
-  dcache_power+=power.dcache_power+power.dtlb;
+  /* CDA5106: block-buffer cache dl0 */
+  blockbuffer_power+=power.blockbuffer_power+power.dtlb;
+  dcache_power+=power.dcache_power;
   dcache2_power+=power.dcache2_power;
   alu_power+=power.ialu_power + power.falu_power;
   falu_power+=power.falu_power;
@@ -355,6 +375,8 @@ void update_power_stats()
   total_lsq_access+=lsq_access;
   total_regfile_access+=regfile_access;
   total_icache_access+=icache_access;
+  /* CDA5106: block-buffer cache dl0 */
+  total_blockbuffer_access+=blockbuffer_access;
   total_dcache_access+=dcache_access;
   total_dcache2_access+=dcache2_access;
   total_alu_access+=alu_access;
@@ -366,6 +388,8 @@ void update_power_stats()
   max_lsq_access=MAX(lsq_access,max_lsq_access);
   max_regfile_access=MAX(regfile_access,max_regfile_access);
   max_icache_access=MAX(icache_access,max_icache_access);
+  /* CDA5106: block-buffer cache dl0 */
+  max_blockbuffer_access=MAX(blockbuffer_access, max_blockbuffer_access);
   max_dcache_access=MAX(dcache_access,max_dcache_access);
   max_dcache2_access=MAX(dcache2_access,max_dcache2_access);
   max_alu_access=MAX(alu_access,max_alu_access);
@@ -506,19 +530,31 @@ void update_power_stats()
   else
     icache_power_cc3+=turnoff_factor*(power.icache_power+power.itlb);
 
-  if(dcache_access) {
-    if(dcache_access <= res_memport)
-      dcache_power_cc1+=power.dcache_power+power.dtlb;
+  /* CDA5106: calc power stats for blockbuffer dl0 */
+  if(blockbuffer_access) {
+    if(blockbuffer_access <= res_memport)
+      blockbuffer_power_cc1+=power.blockbuffer_power+power.dtlb;
     else
-      dcache_power_cc1+=((double)dcache_access/(double)res_memport)*(power.dcache_power +
+      blockbuffer_power_cc1+=((double)blockbuffer_access/(double)res_memport)*(power.blockbuffer_power +
 						     power.dtlb);
-    dcache_power_cc2+=((double)dcache_access/(double)res_memport)*(power.dcache_power +
+    blockbuffer_power_cc2+=((double)blockbuffer_access/(double)res_memport)*(power.blockbuffer_power +
 						   power.dtlb);
-    dcache_power_cc3+=((double)dcache_access/(double)res_memport)*(power.dcache_power +
+    blockbuffer_power_cc3+=((double)blockbuffer_access/(double)res_memport)*(power.blockbuffer_power +
 						   power.dtlb);
   }
   else
-    dcache_power_cc3+=turnoff_factor*(power.dcache_power+power.dtlb);
+    blockbuffer_power_cc3+=turnoff_factor*(power.blockbuffer_power+power.dtlb);
+ 
+  if(dcache_access) {
+    if(dcache_access <= res_memport)
+      dcache_power_cc1+=power.dcache_power;
+    else
+      dcache_power_cc1+=((double)dcache_access/(double)res_memport)*(power.dcache_power);
+    dcache_power_cc2+=((double)dcache_access/(double)res_memport)*(power.dcache_power);
+    dcache_power_cc3+=((double)dcache_access/(double)res_memport)*(power.dcache_power);
+  }
+  else
+    dcache_power_cc3+=turnoff_factor*(power.dcache_power);
 
   if(dcache2_access) {
     if(dcache2_access <= res_memport)
@@ -638,6 +674,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_double(sdb, "icache_power", "total power usage of icache", &icache_power, 0, NULL);
 
+  /* CDA5106: total power usage stats for blockbuffer dl0 */
+  stat_reg_double(sdb, "blockbuffer_power", "total power usage of block buffer cache dl0", &blockbuffer_power, 0, NULL);
+  
   stat_reg_double(sdb, "dcache_power", "total power usage of dcache", &dcache_power, 0, NULL);
 
   stat_reg_double(sdb, "dcache2_power", "total power usage of dcache2", &dcache2_power, 0, NULL);
@@ -662,6 +701,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "avg_icache_power", "avg power usage of icache", "icache_power/sim_cycle",  NULL);
 
+  /* CDA5106: Calc stats for block buffer dl0 */
+  stat_reg_formula(sdb, "avg_blockbuffer_power", "avg power usage of block buffer cache dl0", "blockbuffer_power/sim_cycle",  NULL);
+  
   stat_reg_formula(sdb, "avg_dcache_power", "avg power usage of dcache", "dcache_power/sim_cycle",  NULL);
 
   stat_reg_formula(sdb, "avg_dcache2_power", "avg power usage of dcache2", "dcache2_power/sim_cycle",  NULL);
@@ -678,23 +720,30 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "dispatch_stage_power", "total power usage of dispatch stage", "rename_power", NULL);
 
-  stat_reg_formula(sdb, "issue_stage_power", "total power usage of issue stage", "resultbus_power + alu_power + dcache_power + dcache2_power + window_power + lsq_power", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "issue_stage_power", "total power usage of issue stage", "resultbus_power + alu_power + blockbuffer_power + dcache_power + dcache2_power + window_power + lsq_power", NULL);
 
   stat_reg_formula(sdb, "avg_fetch_power", "average power of fetch unit per cycle", "(icache_power + bpred_power)/ sim_cycle", /* format */NULL);
 
   stat_reg_formula(sdb, "avg_dispatch_power", "average power of dispatch unit per cycle", "(rename_power)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "avg_issue_power", "average power of issue unit per cycle", "(resultbus_power + alu_power + dcache_power + dcache2_power + window_power + lsq_power)/ sim_cycle", /* format */NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_issue_power", "average power of issue unit per cycle", "(resultbus_power + alu_power + blockbuffer_power + dcache_power + dcache2_power + window_power + lsq_power)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "total_power", "total power per cycle","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power  + resultbus_power + clock_power + alu_power + dcache_power + dcache2_power)", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "total_power", "total power per cycle","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power  + resultbus_power + clock_power + alu_power + blockbuffer_power + dcache_power + dcache2_power)", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_cycle", "average total power per cycle","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + dcache_power + dcache2_power)/sim_cycle", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_cycle", "average total power per cycle","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + blockbuffer_power + dcache_power + dcache2_power)/sim_cycle", NULL);
+  
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_cycle_nofp_nod2", "average total power per cycle","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + blockbuffer_power + dcache_power - falu_power )/sim_cycle", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_cycle_nofp_nod2", "average total power per cycle","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + dcache_power - falu_power )/sim_cycle", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_insn", "average total power per insn","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + blockbuffer_power + dcache_power + dcache2_power)/sim_total_insn", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_insn", "average total power per insn","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + dcache_power + dcache2_power)/sim_total_insn", NULL);
-
-  stat_reg_formula(sdb, "avg_total_power_insn_nofp_nod2", "average total power per insn","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + dcache_power - falu_power )/sim_total_insn", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_insn_nofp_nod2", "average total power per insn","(rename_power + bpred_power + window_power + lsq_power + regfile_power + icache_power + resultbus_power + clock_power + alu_power + blockbuffer_power + dcache_power - falu_power )/sim_total_insn", NULL);
 
   stat_reg_double(sdb, "rename_power_cc1", "total power usage of rename unit_cc1", &rename_power_cc1, 0, NULL);
 
@@ -707,6 +756,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
   stat_reg_double(sdb, "regfile_power_cc1", "total power usage of arch. regfile_cc1", &regfile_power_cc1, 0, NULL);
 
   stat_reg_double(sdb, "icache_power_cc1", "total power usage of icache_cc1", &icache_power_cc1, 0, NULL);
+
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_double(sdb, "blockbuffer_power_cc1", "total power usage of blockbuffer_cc1", &blockbuffer_power_cc1, 0, NULL);
 
   stat_reg_double(sdb, "dcache_power_cc1", "total power usage of dcache_cc1", &dcache_power_cc1, 0, NULL);
 
@@ -730,6 +782,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "avg_icache_power_cc1", "avg power usage of icache_cc1", "icache_power_cc1/sim_cycle",  NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_formula(sdb, "avg_blockbuffer_power_cc1", "avg power usage of blockbuffer_cc1", "blockbuffer_power_cc1/sim_cycle",  NULL);
+
   stat_reg_formula(sdb, "avg_dcache_power_cc1", "avg power usage of dcache_cc1", "dcache_power_cc1/sim_cycle",  NULL);
 
   stat_reg_formula(sdb, "avg_dcache2_power_cc1", "avg power usage of dcache2_cc1", "dcache2_power_cc1/sim_cycle",  NULL);
@@ -744,19 +799,24 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "dispatch_stage_power_cc1", "total power usage of dispatch stage_cc1", "rename_power_cc1", NULL);
 
-  stat_reg_formula(sdb, "issue_stage_power_cc1", "total power usage of issue stage_cc1", "resultbus_power_cc1 + alu_power_cc1 + dcache_power_cc1 + dcache2_power_cc1 + lsq_power_cc1 + window_power_cc1", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "issue_stage_power_cc1", "total power usage of issue stage_cc1", "resultbus_power_cc1 + alu_power_cc1 + blockbuffer_power_cc1 + dcache_power_cc1 + dcache2_power_cc1 + lsq_power_cc1 + window_power_cc1", NULL);
 
   stat_reg_formula(sdb, "avg_fetch_power_cc1", "average power of fetch unit per cycle_cc1", "(icache_power_cc1 + bpred_power_cc1)/ sim_cycle", /* format */NULL);
 
   stat_reg_formula(sdb, "avg_dispatch_power_cc1", "average power of dispatch unit per cycle_cc1", "(rename_power_cc1)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "avg_issue_power_cc1", "average power of issue unit per cycle_cc1", "(resultbus_power_cc1 + alu_power_cc1 + dcache_power_cc1 + dcache2_power_cc1 + lsq_power_cc1 + window_power_cc1)/ sim_cycle", /* format */NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_issue_power_cc1", "average power of issue unit per cycle_cc1", "(resultbus_power_cc1 + alu_power_cc1 + blockbuffer_power_cc1 + dcache_power_cc1 + dcache2_power_cc1 + lsq_power_cc1 + window_power_cc1)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "total_power_cycle_cc1", "total power per cycle_cc1","(rename_power_cc1 + bpred_power_cc1 + lsq_power_cc1 + window_power_cc1 + regfile_power_cc1 + icache_power_cc1 + resultbus_power_cc1 + clock_power_cc1 + alu_power_cc1 + dcache_power_cc1 + dcache2_power_cc1)", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "total_power_cycle_cc1", "total power per cycle_cc1","(rename_power_cc1 + bpred_power_cc1 + lsq_power_cc1 + window_power_cc1 + regfile_power_cc1 + icache_power_cc1 + resultbus_power_cc1 + clock_power_cc1 + alu_power_cc1 + blockbuffer_power_cc1 + dcache_power_cc1 + dcache2_power_cc1)", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_cycle_cc1", "average total power per cycle_cc1","(rename_power_cc1 + bpred_power_cc1 + lsq_power_cc1 + window_power_cc1 + regfile_power_cc1 + icache_power_cc1 + resultbus_power_cc1 + clock_power_cc1 + alu_power_cc1 + dcache_power_cc1 +dcache2_power_cc1)/sim_cycle", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_cycle_cc1", "average total power per cycle_cc1","(rename_power_cc1 + bpred_power_cc1 + lsq_power_cc1 + window_power_cc1 + regfile_power_cc1 + icache_power_cc1 + resultbus_power_cc1 + clock_power_cc1 + alu_power_cc1 + blockbuffer_power_cc1 + dcache_power_cc1 +dcache2_power_cc1)/sim_cycle", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_insn_cc1", "average total power per insn_cc1","(rename_power_cc1 + bpred_power_cc1 + lsq_power_cc1 + window_power_cc1 + regfile_power_cc1 + icache_power_cc1 + resultbus_power_cc1 + clock_power_cc1 +  alu_power_cc1 + dcache_power_cc1 + dcache2_power_cc1)/sim_total_insn", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_insn_cc1", "average total power per insn_cc1","(rename_power_cc1 + bpred_power_cc1 + lsq_power_cc1 + window_power_cc1 + regfile_power_cc1 + icache_power_cc1 + resultbus_power_cc1 + clock_power_cc1 +  alu_power_cc1 + blockbuffer_power_cc1 + dcache_power_cc1 + dcache2_power_cc1)/sim_total_insn", NULL);
 
   stat_reg_double(sdb, "rename_power_cc2", "total power usage of rename unit_cc2", &rename_power_cc2, 0, NULL);
 
@@ -770,6 +830,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_double(sdb, "icache_power_cc2", "total power usage of icache_cc2", &icache_power_cc2, 0, NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_double(sdb, "blockbuffer_power_cc2", "total power usage of blockbuffer_cc2", &blockbuffer_power_cc2, 0, NULL);
+  
   stat_reg_double(sdb, "dcache_power_cc2", "total power usage of dcache_cc2", &dcache_power_cc2, 0, NULL);
 
   stat_reg_double(sdb, "dcache2_power_cc2", "total power usage of dcache2_cc2", &dcache2_power_cc2, 0, NULL);
@@ -792,6 +855,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "avg_icache_power_cc2", "avg power usage of icache_cc2", "icache_power_cc2/sim_cycle",  NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_formula(sdb, "avg_blockbuffer_power_cc2", "avg power usage of blockbuffer_cc2", "blockbuffer_power_cc2/sim_cycle",  NULL);
+  
   stat_reg_formula(sdb, "avg_dcache_power_cc2", "avg power usage of dcache_cc2", "dcache_power_cc2/sim_cycle",  NULL);
 
   stat_reg_formula(sdb, "avg_dcache2_power_cc2", "avg power usage of dcache2_cc2", "dcache2_power_cc2/sim_cycle",  NULL);
@@ -806,19 +872,24 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "dispatch_stage_power_cc2", "total power usage of dispatch stage_cc2", "rename_power_cc2", NULL);
 
-  stat_reg_formula(sdb, "issue_stage_power_cc2", "total power usage of issue stage_cc2", "resultbus_power_cc2 + alu_power_cc2 + dcache_power_cc2 + dcache2_power_cc2 + lsq_power_cc2 + window_power_cc2", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "issue_stage_power_cc2", "total power usage of issue stage_cc2", "resultbus_power_cc2 + alu_power_cc2 + blockbuffer_power_cc2 + dcache_power_cc2 + dcache2_power_cc2 + lsq_power_cc2 + window_power_cc2", NULL);
 
   stat_reg_formula(sdb, "avg_fetch_power_cc2", "average power of fetch unit per cycle_cc2", "(icache_power_cc2 + bpred_power_cc2)/ sim_cycle", /* format */NULL);
 
   stat_reg_formula(sdb, "avg_dispatch_power_cc2", "average power of dispatch unit per cycle_cc2", "(rename_power_cc2)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "avg_issue_power_cc2", "average power of issue unit per cycle_cc2", "(resultbus_power_cc2 + alu_power_cc2 + dcache_power_cc2 + dcache2_power_cc2 + lsq_power_cc2 + window_power_cc2)/ sim_cycle", /* format */NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_issue_power_cc2", "average power of issue unit per cycle_cc2", "(resultbus_power_cc2 + alu_power_cc2 +  blockbuffer_power_cc2 + dcache_power_cc2 + dcache2_power_cc2 + lsq_power_cc2 + window_power_cc2)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "total_power_cycle_cc2", "total power per cycle_cc2","(rename_power_cc2 + bpred_power_cc2 + lsq_power_cc2 + window_power_cc2 + regfile_power_cc2 + icache_power_cc2 + resultbus_power_cc2 + clock_power_cc2 + alu_power_cc2 + dcache_power_cc2 + dcache2_power_cc2)", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "total_power_cycle_cc2", "total power per cycle_cc2","(rename_power_cc2 + bpred_power_cc2 + lsq_power_cc2 + window_power_cc2 + regfile_power_cc2 + icache_power_cc2 + resultbus_power_cc2 + clock_power_cc2 + alu_power_cc2 + blockbuffer_power_cc2 + dcache_power_cc2 + dcache2_power_cc2)", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_cycle_cc2", "average total power per cycle_cc2","(rename_power_cc2 + bpred_power_cc2 + lsq_power_cc2 + window_power_cc2 + regfile_power_cc2 + icache_power_cc2 + resultbus_power_cc2 + clock_power_cc2 + alu_power_cc2 + dcache_power_cc2 + dcache2_power_cc2)/sim_cycle", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_cycle_cc2", "average total power per cycle_cc2","(rename_power_cc2 + bpred_power_cc2 + lsq_power_cc2 + window_power_cc2 + regfile_power_cc2 + icache_power_cc2 + resultbus_power_cc2 + clock_power_cc2 + alu_power_cc2 + blockbuffer_power_cc2 + dcache_power_cc2 + dcache2_power_cc2)/sim_cycle", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_insn_cc2", "average total power per insn_cc2","(rename_power_cc2 + bpred_power_cc2 + lsq_power_cc2 + window_power_cc2 + regfile_power_cc2 + icache_power_cc2 + resultbus_power_cc2 + clock_power_cc2 + alu_power_cc2 + dcache_power_cc2 + dcache2_power_cc2)/sim_total_insn", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_insn_cc2", "average total power per insn_cc2","(rename_power_cc2 + bpred_power_cc2 + lsq_power_cc2 + window_power_cc2 + regfile_power_cc2 + icache_power_cc2 + resultbus_power_cc2 + clock_power_cc2 + alu_power_cc2 + blockbuffer_power_cc2 + dcache_power_cc2 + dcache2_power_cc2)/sim_total_insn", NULL);
 
   stat_reg_double(sdb, "rename_power_cc3", "total power usage of rename unit_cc3", &rename_power_cc3, 0, NULL);
 
@@ -832,6 +903,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_double(sdb, "icache_power_cc3", "total power usage of icache_cc3", &icache_power_cc3, 0, NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_double(sdb, "blockbuffer_power_cc3", "total power usage of blockbuffer_cc3", &blockbuffer_power_cc3, 0, NULL);
+  
   stat_reg_double(sdb, "dcache_power_cc3", "total power usage of dcache_cc3", &dcache_power_cc3, 0, NULL);
 
   stat_reg_double(sdb, "dcache2_power_cc3", "total power usage of dcache2_cc3", &dcache2_power_cc3, 0, NULL);
@@ -854,6 +928,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "avg_icache_power_cc3", "avg power usage of icache_cc3", "icache_power_cc3/sim_cycle",  NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_formula(sdb, "avg_blockbuffer_power_cc3", "avg power usage of blockbuffer_cc3", "blockbuffer_power_cc3/sim_cycle",  NULL);
+  
   stat_reg_formula(sdb, "avg_dcache_power_cc3", "avg power usage of dcache_cc3", "dcache_power_cc3/sim_cycle",  NULL);
 
   stat_reg_formula(sdb, "avg_dcache2_power_cc3", "avg power usage of dcache2_cc3", "dcache2_power_cc3/sim_cycle",  NULL);
@@ -868,19 +945,24 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "dispatch_stage_power_cc3", "total power usage of dispatch stage_cc3", "rename_power_cc3", NULL);
 
-  stat_reg_formula(sdb, "issue_stage_power_cc3", "total power usage of issue stage_cc3", "resultbus_power_cc3 + alu_power_cc3 + dcache_power_cc3 + dcache2_power_cc3 + lsq_power_cc3 + window_power_cc3", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "issue_stage_power_cc3", "total power usage of issue stage_cc3", "resultbus_power_cc3 + alu_power_cc3 + blockbuffer_power_cc3 + dcache_power_cc3 + dcache2_power_cc3 + lsq_power_cc3 + window_power_cc3", NULL);
 
   stat_reg_formula(sdb, "avg_fetch_power_cc3", "average power of fetch unit per cycle_cc3", "(icache_power_cc3 + bpred_power_cc3)/ sim_cycle", /* format */NULL);
 
   stat_reg_formula(sdb, "avg_dispatch_power_cc3", "average power of dispatch unit per cycle_cc3", "(rename_power_cc3)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "avg_issue_power_cc3", "average power of issue unit per cycle_cc3", "(resultbus_power_cc3 + alu_power_cc3 + dcache_power_cc3 + dcache2_power_cc3 + lsq_power_cc3 + window_power_cc3)/ sim_cycle", /* format */NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_issue_power_cc3", "average power of issue unit per cycle_cc3", "(resultbus_power_cc3 + alu_power_cc3 + blockbuffer_power_cc3 + dcache_power_cc3 + dcache2_power_cc3 + lsq_power_cc3 + window_power_cc3)/ sim_cycle", /* format */NULL);
 
-  stat_reg_formula(sdb, "total_power_cycle_cc3", "total power per cycle_cc3","(rename_power_cc3 + bpred_power_cc3 + lsq_power_cc3 + window_power_cc3 + regfile_power_cc3 + icache_power_cc3 + resultbus_power_cc3 + clock_power_cc3 + alu_power_cc3 + dcache_power_cc3 + dcache2_power_cc3)", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "total_power_cycle_cc3", "total power per cycle_cc3","(rename_power_cc3 + bpred_power_cc3 + lsq_power_cc3 + window_power_cc3 + regfile_power_cc3 + icache_power_cc3 + resultbus_power_cc3 + clock_power_cc3 + alu_power_cc3 + blockbuffer_power_cc3 + dcache_power_cc3 + dcache2_power_cc3)", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_cycle_cc3", "average total power per cycle_cc3","(rename_power_cc3 + bpred_power_cc3 + lsq_power_cc3 + window_power_cc3 + regfile_power_cc3 + icache_power_cc3 + resultbus_power_cc3 + clock_power_cc3 + alu_power_cc3 + dcache_power_cc3 + dcache2_power_cc3)/sim_cycle", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_cycle_cc3", "average total power per cycle_cc3","(rename_power_cc3 + bpred_power_cc3 + lsq_power_cc3 + window_power_cc3 + regfile_power_cc3 + icache_power_cc3 + resultbus_power_cc3 + clock_power_cc3 + alu_power_cc3 + blockbuffer_power_cc3 + dcache_power_cc3 + dcache2_power_cc3)/sim_cycle", NULL);
 
-  stat_reg_formula(sdb, "avg_total_power_insn_cc3", "average total power per insn_cc3","(rename_power_cc3 + bpred_power_cc3 + lsq_power_cc3 + window_power_cc3 + regfile_power_cc3 + icache_power_cc3 + resultbus_power_cc3 + clock_power_cc3 + alu_power_cc3 + dcache_power_cc3 + dcache2_power_cc3)/sim_total_insn", NULL);
+  /* CDA5106: added block buffer power */
+  stat_reg_formula(sdb, "avg_total_power_insn_cc3", "average total power per insn_cc3","(rename_power_cc3 + bpred_power_cc3 + lsq_power_cc3 + window_power_cc3 + regfile_power_cc3 + icache_power_cc3 + resultbus_power_cc3 + clock_power_cc3 + alu_power_cc3 + blockbuffer_power_cc3 + dcache_power_cc3 + dcache2_power_cc3)/sim_total_insn", NULL);
 
   stat_reg_counter(sdb, "total_rename_access", "total number accesses of rename unit", &total_rename_access, 0, NULL);
 
@@ -893,9 +975,12 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
   stat_reg_counter(sdb, "total_regfile_access", "total number accesses of arch. regfile", &total_regfile_access, 0, NULL);
 
   stat_reg_counter(sdb, "total_icache_access", "total number accesses of icache", &total_icache_access, 0, NULL);
+  
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_counter(sdb, "total_blockbuffer_access", "total number accesses of blockbuffer dl0", &total_blockbuffer_access, 0, NULL);
 
   stat_reg_counter(sdb, "total_dcache_access", "total number accesses of dcache", &total_dcache_access, 0, NULL);
-
+  
   stat_reg_counter(sdb, "total_dcache2_access", "total number accesses of dcache2", &total_dcache2_access, 0, NULL);
 
   stat_reg_counter(sdb, "total_alu_access", "total number accesses of alu", &total_alu_access, 0, NULL);
@@ -914,6 +999,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_formula(sdb, "avg_icache_access", "avg number accesses of icache", "total_icache_access/sim_cycle",  NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_formula(sdb, "avg_blockbuffer_access", "avg number accesses of blockbuffer dl0", "total_blockbuffer_access/sim_cycle",  NULL);
+  
   stat_reg_formula(sdb, "avg_dcache_access", "avg number accesses of dcache", "total_dcache_access/sim_cycle",  NULL);
 
   stat_reg_formula(sdb, "avg_dcache2_access", "avg number accesses of dcache2", "total_dcache2_access/sim_cycle",  NULL);
@@ -934,6 +1022,9 @@ power_reg_stats(struct stat_sdb_t *sdb)	/* stats database */
 
   stat_reg_counter(sdb, "max_icache_access", "max number accesses of icache", &max_icache_access, 0, NULL);
 
+  /* CDA5106: register stats for dl0 block buffer */
+  stat_reg_counter(sdb, "max_blockbuffer_access", "max number accesses of blockbuffer dl0", &max_blockbuffer_access, 0, NULL);
+  
   stat_reg_counter(sdb, "max_dcache_access", "max number accesses of dcache", &max_dcache_access, 0, NULL);
 
   stat_reg_counter(sdb, "max_dcache2_access", "max number accesses of dcache2", &max_dcache2_access, 0, NULL);
@@ -1034,6 +1125,8 @@ void dump_power_stats(power)
   double regfile_power;
   double reorder_power;
   double icache_power;
+  /* CDA5106: blockbuffer dl0 cache */
+  double blockbuffer_power;
   double dcache_power;
   double dcache2_power;
   double dtlb_power;
@@ -1042,6 +1135,9 @@ void dump_power_stats(power)
 
   icache_power = power->icache_power;
 
+  /* CDA5106: blockbuffer dl0 cache */
+  blockbuffer_power = power->blockbuffer_power;
+  
   dcache_power = power->dcache_power;
 
   dcache2_power = power->dcache2_power;
@@ -1085,7 +1181,7 @@ void dump_power_stats(power)
 
   total_power = bpred_power + rename_power + window_power + regfile_power +
     power->resultbus + lsq_power + 
-    icache_power + dcache_power + dcache2_power + 
+    icache_power + blockbuffer_power + dcache_power + dcache2_power + 
     dtlb_power + itlb_power + power->clock_power + power->ialu_power +
     power->falu_power;
 
@@ -1137,13 +1233,20 @@ void dump_power_stats(power)
   fprintf(stderr," senseamp_power (W): %g\n",power->icache_senseamp);
   fprintf(stderr," tagarray_power (W): %g\n",power->icache_tagarray);
   fprintf(stderr,"Itlb_power (W): %g (%.3g%%)\n",power->itlb,100*power->itlb/total_power);
+  /* CDA5106: blockbuffer dl0 cache stats */
+  fprintf(stderr,"Block Buffer Data Cache Power Consumption: %g  (%.3g%%)\n",blockbuffer_power,100*blockbuffer_power/total_power);
+  fprintf(stderr," decode_power (W): %g\n",power->blockbuffer_decoder);
+  fprintf(stderr," wordline_power (W): %g\n",power->blockbuffer_wordline);
+  fprintf(stderr," bitline_power (W): %g\n",power->blockbuffer_bitline);
+  fprintf(stderr," senseamp_power (W): %g\n",power->blockbuffer_senseamp);
+  fprintf(stderr," tagarray_power (W): %g\n",power->blockbuffer_tagarray);
+  fprintf(stderr,"Dtlb_power (W): %g (%.3g%%)\n",power->dtlb,100*power->dtlb/total_power);
   fprintf(stderr,"Data Cache Power Consumption: %g  (%.3g%%)\n",dcache_power,100*dcache_power/total_power);
   fprintf(stderr," decode_power (W): %g\n",power->dcache_decoder);
   fprintf(stderr," wordline_power (W): %g\n",power->dcache_wordline);
   fprintf(stderr," bitline_power (W): %g\n",power->dcache_bitline);
   fprintf(stderr," senseamp_power (W): %g\n",power->dcache_senseamp);
   fprintf(stderr," tagarray_power (W): %g\n",power->dcache_tagarray);
-  fprintf(stderr,"Dtlb_power (W): %g (%.3g%%)\n",power->dtlb,100*power->dtlb/total_power);
   fprintf(stderr,"Level 2 Cache Power Consumption: %g (%.3g%%)\n",dcache2_power,100*dcache2_power/total_power);
   fprintf(stderr," decode_power (W): %g\n",power->dcache2_decoder);
   fprintf(stderr," wordline_power (W): %g\n",power->dcache2_wordline);
@@ -2068,6 +2171,66 @@ void calculate_power(power)
   calculate_time(&time_result,&time_parameters);
   output_data(&time_result,&time_parameters);
 
+  /* CDA5106: begin dl0 block buffer stats */
+  ndwl=time_result.best_Ndwl;
+  ndbl=time_result.best_Ndbl;
+  nspd=time_result.best_Nspd;
+  ntwl=time_result.best_Ntwl;
+  ntbl=time_result.best_Ntbl;
+  ntspd=time_result.best_Ntspd;
+  c = time_parameters.cache_size;
+  b = time_parameters.block_size;
+  a = time_parameters.associativity; 
+
+  cache=1;
+
+  rowsb = c/(b*a*ndbl*nspd);
+  colsb = 8*b*a*nspd/ndwl;
+
+  tagsize = va_size - ((int)logtwo(cache_dl0->nsets) + (int)logtwo(cache_dl0->bsize));
+  trowsb = c/(b*a*ntbl*ntspd);
+  tcolsb = a * (tagsize + 1 + 6) * ntspd/ntwl;
+
+  if(verbose) {
+    fprintf(stderr,"%d KB %d-way cache (%d-byte block size):\n",c,a,b);
+    fprintf(stderr,"ndwl == %d, ndbl == %d, nspd == %d\n",ndwl,ndbl,nspd);
+    fprintf(stderr,"%d sets of %d rows x %d cols\n",ndwl*ndbl,rowsb,colsb);
+    fprintf(stderr,"tagsize == %d\n",tagsize);
+
+    fprintf(stderr,"\nntwl == %d, ntbl == %d, ntspd == %d\n",ntwl,ntbl,ntspd);
+    fprintf(stderr,"%d sets of %d rows x %d cols\n",ntwl*ntbl,trowsb,tcolsb);
+  }
+
+  predeclength = rowsb * (RegCellHeight + WordlineSpacing);
+  wordlinelength = colsb *  (RegCellWidth + BitlineSpacing);
+  bitlinelength = rowsb * (RegCellHeight + WordlineSpacing);
+
+  if(verbose)
+    fprintf(stderr,"blockbuffer dl0 power stats\n");
+  power->blockbuffer_decoder = res_memport*ndwl*ndbl*array_decoder_power(rowsb,colsb,predeclength,1,1,cache);
+  power->blockbuffer_wordline = res_memport*ndwl*ndbl*array_wordline_power(rowsb,colsb,wordlinelength,1,1,cache);
+  power->blockbuffer_bitline = res_memport*ndwl*ndbl*array_bitline_power(rowsb,colsb,bitlinelength,1,1,cache);
+  power->blockbuffer_senseamp = res_memport*ndwl*ndbl*senseamp_power(colsb);
+  power->blockbuffer_tagarray = res_memport*ntwl*ntbl*(simple_array_power(trowsb,tcolsb,1,1,cache));
+
+  power->blockbuffer_power = power->blockbuffer_decoder + power->blockbuffer_wordline + power->blockbuffer_bitline + power->blockbuffer_senseamp + power->blockbuffer_tagarray;
+
+  clockpower = total_clockpower(.018);
+  power->clock_power = clockpower;
+  if(verbose) {
+    fprintf(stderr,"result bus power == %f\n",power->resultbus);
+    fprintf(stderr,"global clock power == %f\n",clockpower);
+  }
+
+  time_parameters.cache_size = cache_dl2->nsets * cache_dl2->bsize * cache_dl2->assoc; /* C */
+  time_parameters.block_size = cache_dl2->bsize; /* B */
+  time_parameters.associativity = cache_dl2->assoc; /* A */
+  time_parameters.number_of_sets = cache_dl2->nsets; /* C/(B*A) */
+
+  calculate_time(&time_result,&time_parameters);
+  output_data(&time_result,&time_parameters);
+  /* CDA5106: end block */
+  
   ndwl=time_result.best_Ndwl;
   ndbl=time_result.best_Ndbl;
   nspd=time_result.best_Nspd;
@@ -2214,6 +2377,15 @@ void calculate_power(power)
 
   power->icache_power *= crossover_scaling;
 
+  /* CDA5106: scaling */
+  power->blockbuffer_decoder *= crossover_scaling;
+  power->blockbuffer_wordline *= crossover_scaling;
+  power->blockbuffer_bitline *= crossover_scaling;
+  power->blockbuffer_senseamp *= crossover_scaling;
+  power->blockbuffer_tagarray *= crossover_scaling;
+
+  power->blockbuffer_power *= crossover_scaling;
+  
   power->dcache_decoder *= crossover_scaling;
   power->dcache_wordline *= crossover_scaling;
   power->dcache_bitline *= crossover_scaling;
@@ -2251,6 +2423,8 @@ void calculate_power(power)
     power->clock_power +
     power->icache_power + 
     power->itlb + 
+	 /* CDA5106: add blockbuffer dl0 cache */
+	 power->blockbuffer_power +
     power->dcache_power + 
     power->dtlb + 
     power->dcache2_power;
@@ -2274,6 +2448,8 @@ void calculate_power(power)
     power->clock_power +
     power->icache_power + 
     power->itlb + 
+	 /* CDA5106: add blockbuffer dl0 cache */
+	 power->blockbuffer_power +
     power->dcache_power + 
     power->dtlb + 
     power->dcache2_power;

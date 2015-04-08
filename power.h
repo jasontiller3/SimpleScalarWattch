@@ -489,6 +489,13 @@ typedef struct {
 
   double icache;
 
+  /* CDA5106: block-buffering dl0 cache stats */
+  double blockbuffer_decoder;
+  double blockbuffer_wordline;
+  double blockbuffer_bitline;
+  double blockbuffer_senseamp;
+  double blockbuffer_tagarray;
+  
   double dcache_decoder;
   double dcache_wordline;
   double dcache_bitline;
@@ -525,6 +532,8 @@ typedef struct {
   double regfile_power_nobit;
   double result_power;
   double icache_power;
+  /* CDA5106: block-buffering power tracker */
+  double blockbuffer_power;
   double dcache_power;
   double dcache2_power;
 
