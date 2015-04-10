@@ -58,6 +58,9 @@ double turnoff_factor = 0.1;
 
 #define MSCALE (LSCALE * .624 / .2250)
 
+/* CDA 5106: Adding a constant for sub banks */
+#define BANKS_PER_BLOCK 4
+
 /*----------------------------------------------------------------------*/
 
 /* static power model results */
@@ -546,23 +549,25 @@ void update_power_stats()
     blockbuffer_power_cc3+=turnoff_factor*(power.blockbuffer_power+power.dtlb);
  
   if(dcache_access) {
+	/* CDA5106: added sub banking power scaling */
     if(dcache_access <= res_memport)
       dcache_power_cc1+=power.dcache_power;
     else
-      dcache_power_cc1+=((double)dcache_access/(double)res_memport)*(power.dcache_power);
-    dcache_power_cc2+=((double)dcache_access/(double)res_memport)*(power.dcache_power);
-    dcache_power_cc3+=((double)dcache_access/(double)res_memport)*(power.dcache_power);
+      dcache_power_cc1+=((double)dcache_access/(double)res_memport)*(power.dcache_power/(double)BANKS_PER_BLOCK);(power.dcache_power);
+    dcache_power_cc2+=((double)dcache_access/(double)res_memport)*(power.dcache_power/(double)BANKS_PER_BLOCK);(power.dcache_power);
+    dcache_power_cc3+=((double)dcache_access/(double)res_memport)*(power.dcache_power/(double)BANKS_PER_BLOCK);(power.dcache_power);
   }
   else
     dcache_power_cc3+=turnoff_factor*(power.dcache_power);
 
   if(dcache2_access) {
+	/* CDA5106: added sub banking power scaling */
     if(dcache2_access <= res_memport)
       dcache2_power_cc1+=power.dcache2_power;
     else
-      dcache2_power_cc1+=((double)dcache2_access/(double)res_memport)*power.dcache2_power;
-    dcache2_power_cc2+=((double)dcache2_access/(double)res_memport)*power.dcache2_power;
-    dcache2_power_cc3+=((double)dcache2_access/(double)res_memport)*power.dcache2_power;
+      dcache2_power_cc1+=((double)dcache2_access/(double)res_memport)*(power.dcache2_power/(double)BANKS_PER_BLOCK);
+    dcache2_power_cc2+=((double)dcache2_access/(double)res_memport)*(power.dcache2_power/(double)BANKS_PER_BLOCK);
+    dcache2_power_cc3+=((double)dcache2_access/(double)res_memport)*(power.dcache2_power/(double)BANKS_PER_BLOCK);
   }
   else
     dcache2_power_cc3+=turnoff_factor*power.dcache2_power;
